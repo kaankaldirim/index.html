@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABD Nükleer Borsası Analizi</title>
+    
+    <!-- Tailwind CSS (Stiller için) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Import Map: React ve Lucide ikonlarını tarayıcıya tanıtıyoruz -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.344.0"
+      }
+    }
+    </script>
+
+    <!-- Babel (JSX kodunu tarayıcının anlaması için) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* Kaydırma çubuğunu gizleme */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-black text-white">
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+            Atom, 
+            Pickaxe, 
+            Factory, 
+            Zap, 
+            TrendingUp, 
+            ChevronDown, 
+            Cpu, 
+            Truck, 
+            FlaskConical, 
+            DollarSign,
+            Code 
+        } from 'lucide-react';
+
+        const App = () => {
+            const [activeCategory, setActiveCategory] = useState('all');
+
+            const categories = [
+                { id: 'all', name: 'Tüm Portföy', icon: TrendingUp },
+                { id: 'mining', name: 'Madencilik & İşleme', icon: Pickaxe },
+                { id: 'smr', name: 'Yeni Nesil SMR & Micro', icon: Atom },
+                { id: 'enrichment', name: 'Yakıt & Zenginleştirme', icon: Factory },
+                { id: 'utility', name: 'Santral & Yapay Zeka', icon: Zap },
+            ];
+
+            const companies = [
+                {
+                    id: "CCJ",
+                    ticker: "CCJ",
+                    name: "Cameco Corporation",
+                    category: "mining",
+                    price: "~$50-55",
+                    tagline: "Devler Ligi: En Büyük Saf Oyuncu",
+                    role: "Tier-1 Uranyum Üretimi & Westinghouse Ortağı",
+                    details: {
+                        what: "Kanada merkezli olmasına rağmen NYSE'de işlem gören, batı dünyasının en büyük uranyum üreticisi. Sadece madenci değil; efsanevi reaktör üreticisi Westinghouse'un %49 ortağı olarak artık santral servisi işinde de var.",
+                        moat: "Dikey Entegrasyon & Rezerv Kalitesi: Cigar Lake madeni %15 tenörle çalışır (dünya ortalaması %0.2'dir). Maliyeti inanılmaz düşüktür. Westinghouse hamlesiyle artık sadece yakıt satmıyor, reaktörün bakımından ve kurulumundan da para kazanıyor.",
+                        catalyst: "Ukrayna savaşı sonrası batının Rus uranyumuna alternatif arayışında ilk kapısı."
+                    }
+                },
+                {
+                    id: "UUUU",
+                    ticker: "UUUU",
+                    name: "Energy Fuels",
+                    category: "mining",
+                    price: "~$6-7",
+                    tagline: "Stratejik Tesis Tekeli",
+                    role: "Uranyum + Vanadyum + Nadir Toprak Elementleri",
+                    details: {
+                        what: "Sadece bir madenci değil, ABD'deki tek lisanslı konvansiyonel uranyum işleme tesisi olan 'White Mesa Mill'in sahibidir. Ayrıca Nadir Toprak Elementleri (REE) işleme kapasitesine sahip tek ABD şirketlerinden biridir.",
+                        moat: "White Mesa Mill Tekeli: ABD'de başka bir şirket uranyum çıkarsa bile işlemek için büyük ihtimalle UUUU'nun kapısını çalmak zorundadır (veya yurtdışına yollamalıdır). Tesisin lisansını bugün sıfırdan almak 10+ yıl sürer.",
+                        catalyst: "Elektrikli araçlar için gereken nadir elementleri de işleyebilmeleri onları 'çift yönlü' bir enerji şirketi yapıyor."
+                    }
+                },
+                {
+                    id: "OKLO",
+                    ticker: "OKLO",
+                    name: "Oklo Inc.",
+                    category: "smr",
+                    price: "~$18-22",
+                    tagline: "Sam Altman'ın Nükleer Vizyonu",
+                    role: "Hızlı Fisyon Mikro Reaktörleri (Aurora)",
+                    details: {
+                        what: "OpenAI CEO'su Sam Altman'ın desteklediği şirket. 'Aurora' adını verdikleri reaktörler, nükleer atıkları yakıt olarak kullanabilen sıvı metal soğutmalı hızlı reaktörlerdir.",
+                        moat: "İş Modeli Farkı: Rakipleri reaktör satmaya çalışırken, Oklo 'Güç Satın Alma Anlaşması' (PPA) yapar. Yani reaktörü kurar, işletir ve elektriği müşteriye (özellikle Veri Merkezlerine) satar. Bu, tekrarlayan ve sürekli gelir (recurring revenue) demektir.",
+                        catalyst: "HALEU yakıtını geri dönüştürme teknolojisi, yakıt maliyetlerini sıfıra yaklaştırabilir."
+                    }
+                },
+                {
+                    id: "SMR",
+                    ticker: "SMR",
+                    name: "NuScale Power",
+                    category: "smr",
+                    price: "~$10-12",
+                    tagline: "Regülasyonu Yenen İlk Şirket",
+                    role: "Hafif Su SMR Teknolojisi",
+                    details: {
+                        what: "ABD Nükleer Düzenleme Komisyonu'ndan (NRC) tasarım onayı almayı başarmış ilk ve tek SMR şirketidir. VOYGR santralleri, mevcut büyük santrallerin küçültülmüş ve güvenli hale getirilmiş versiyonudur.",
+                        moat: "Zaman Avantajı: Nükleer sektörde en büyük engel teknolojiden ziyade bürokrasidir. NuScale bu bürokrasi duvarını aşmıştır. Rakipleri onay için yıllarca beklerken onlar sipariş aşamasındadır.",
+                        catalyst: "Romanya ve Doğu Avrupa projeleri ile küresel açılım potansiyeli."
+                    }
+                },
+                {
+                    id: "NNE",
+                    ticker: "NNE",
+                    name: "Nano Nuclear Energy",
+                    category: "smr",
+                    price: "~$15-20",
+                    tagline: "Taşınabilir Nükleer Güç",
+                    role: "Mikro Reaktörler & Taşıma Lojistiği",
+                    details: {
+                        what: "'ZEUS' ve 'ODIN' isimli mikro reaktörleri geliştiriyorlar. Bunlar bir tırın arkasına sığacak kadar küçük. Ayrıca HALEU yakıtının taşınması için özel lojistik şirketleri kurdular.",
+                        moat: "Niş Pazar (Askeri & Uzay): Şehir elektriğinden ziyade; askeri üsler, uzak maden sahaları veya afet bölgeleri için 'tak-çalıştır' enerji üretiyorlar. Rakiplerinden farkı, reaktörü 'taşınabilir' bir ürün olarak konumlandırmaları.",
+                        catalyst: "Idaho Ulusal Laboratuvarı ile yapılan stratejik ortaklıklar."
+                    }
+                },
+                {
+                    id: "LEU",
+                    ticker: "LEU",
+                    name: "Centrus Energy",
+                    category: "enrichment",
+                    price: "~$70-80",
+                    tagline: "SMR'ların Benzin İstasyonu",
+                    role: "HALEU Üretimi & Zenginleştirme",
+                    details: {
+                        what: "Uranyumu madenden alıp reaktörde yanacak kıvama getiren (zenginleştiren) kritik ara oyuncu. Yeni nesil reaktörlerin (Oklo, TerraPower vb.) ihtiyacı olan HALEU yakıtını ABD topraklarında üretebilen tek lisanslı ticari firma.",
+                        moat: "Milli Güvenlik Meselesi: ABD, Rusya'dan uranyum alımını kestiği an, LEU tek seçenek olarak kalıyor. SMR devrimi olacaksa, yakıtı LEU'dan geçmek zorunda.",
+                        catalyst: "ABD hükümetinden aldıkları hibe ve teşviklerle üretim kapasitelerini artırıyorlar."
+                    }
+                },
+                {
+                    id: "CEG",
+                    ticker: "CEG",
+                    name: "Constellation Energy",
+                    category: "utility",
+                    price: "~$260+",
+                    tagline: "Yapay Zeka'nın Enerji Kaynağı",
+                    role: "En Büyük İşletmeci & AI Partneri",
+                    details: {
+                        what: "ABD'nin en büyük nükleer filosuna sahip. Maden veya teknoloji riski almaz; var olan santralleri işletir. Yakın zamanda Microsoft ile Three Mile Island santralini sadece Microsoft için yeniden açmak üzere 20 yıllık dev bir anlaşma imzaladı.",
+                        moat: "Baz Yük Enerjisi: Rüzgar ve güneş kesintilidir, veri merkezleri ise 7/24 çalışır. CEG, veri merkezlerine 'kesintisiz yeşil enerji' satabilen nadir firmadır. Microsoft anlaşması, nükleer enerjinin piyasa fiyatının çok üzerinde satılabileceğini kanıtladı.",
+                        catalyst: "Diğer teknoloji devlerinin (Amazon, Google) benzer anlaşmalar için sırada beklemesi."
+                    }
+                }
+            ];
+
+            const filteredCompanies = activeCategory === 'all' 
+                ? companies 
+                : companies.filter(c => c.category === activeCategory);
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white font-sans selection:bg-indigo-500 selection:text-white pb-10">
+                    
+                    {/* Hero Header */}
+                    <header className="pt-8 pb-6 px-4 border-b border-gray-800 bg-gray-900 z-20">
+                        <div className="max-w-5xl mx-auto">
+                            <div className="flex items-center space-x-3 mb-2">
+                                <div className="bg-indigo-600 p-2 rounded-lg shadow-lg shadow-indigo-500/20 flex-shrink-0">
+                                    <DollarSign className="w-6 h-6 text-white" />
+                                </div>
+                                <h1 className="text-2xl md:text-4xl font-extrabold bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent leading-tight">
+                                    ABD Nükleer Borsası
+                                </h1>
+                            </div>
+                            <p className="text-slate-400 max-w-2xl text-xs md:text-base leading-relaxed mt-2">
+                                NYSE ve Nasdaq'da işlem gören, sektörü domine eden kritik oyuncuların derin analizi. 
+                                <span className="text-indigo-400 font-medium ml-1 block md:inline mt-1 md:mt-0">Sadece ne yaptıkları değil, neden vazgeçilmez oldukları.</span>
+                            </p>
+                        </div>
+                    </header>
+
+                    {/* Main Container */}
+                    <main className="max-w-5xl mx-auto px-4 py-6">
+                        
+                        {/* Navigation Filters */}
+                        <div className="mb-6 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+                            <div className="flex space-x-2 md:flex-wrap md:space-x-0 md:gap-2 min-w-max">
+                                {categories.map((cat) => (
+                                    <button
+                                        key={cat.id}
+                                        onClick={() => setActiveCategory(cat.id)}
+                                        className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all duration-300 border flex-shrink-0
+                                            ${activeCategory === cat.id 
+                                                ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/40' 
+                                                : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-750 hover:border-gray-600 hover:text-gray-200'}`}
+                                    >
+                                        <cat.icon size={16} className="flex-shrink-0" />
+                                        <span className="whitespace-nowrap">{cat.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Cards Layout */}
+                        <div className="grid grid-cols-1 gap-5">
+                            {filteredCompanies.map((company) => (
+                                <AnalysisCard key={company.id} company={company} />
+                            ))}
+                        </div>
+
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="border-t border-gray-800 mt-12 py-10 text-center px-4">
+                        <p className="text-gray-500 text-xs mb-6 max-w-md mx-auto">
+                            Burada yer alan veriler piyasa koşullarına göre değişkendir ve sadece eğitim amaçlıdır. Kesinlikle yatırım tavsiyesi değildir.
+                        </p>
+                        
+                        {/* Signature Box */}
+                        <div className="inline-flex flex-col items-center justify-center p-4 rounded-2xl bg-gray-800/50 border border-gray-700/50 backdrop-blur-sm hover:border-indigo-500/30 transition-colors">
+                            <div className="flex items-center space-x-2 mb-1">
+                                <Code size={16} className="text-indigo-400" />
+                                <span className="text-gray-400 text-xs font-medium tracking-wide">DEVELOPED BY</span>
+                            </div>
+                            <p className="text-lg font-bold bg-gradient-to-r from-indigo-300 to-white bg-clip-text text-transparent">
+                                Kaan Kaldırım
+                            </p>
+                        </div>
+                        <p className="mt-8 text-gray-700 text-[10px]">Reportt Steel © 2024</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const AnalysisCard = ({ company }) => {
+            const [isOpen, setIsOpen] = useState(false);
+
+            const getAccentColor = () => {
+                switch(company.category) {
+                    case 'mining': return 'text-amber-400 border-amber-500/30 bg-amber-500/10';
+                    case 'smr': return 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10';
+                    case 'enrichment': return 'text-purple-400 border-purple-500/30 bg-purple-500/10';
+                    case 'utility': return 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10';
+                    default: return 'text-gray-400';
+                }
+            };
+
+            return (
+                <div className={`relative group rounded-xl border bg-gray-800/40 backdrop-blur-sm transition-all duration-300 overflow-hidden
+                    ${isOpen ? 'border-indigo-500/50 shadow-xl shadow-black/50' : 'border-gray-700 hover:border-gray-600 hover:bg-gray-800/60'}`}>
+                    
+                    <div 
+                        className="p-4 md:p-6 cursor-pointer flex flex-col md:flex-row gap-4 md:items-center justify-between"
+                        onClick={() => setIsOpen(!isOpen)}
+                    >
+                        <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                                <span className={`text-[10px] md:text-sm font-black px-2 py-0.5 md:px-3 md:py-1 rounded md:rounded-md tracking-widest border ${getAccentColor()}`}>
+                                    {company.ticker}
+                                </span>
+                                <span className="text-gray-400 text-[10px] md:text-xs uppercase tracking-wide font-semibold truncate">
+                                    {company.category === 'mining' ? 'Madencilik' :
+                                    company.category === 'smr' ? 'Teknoloji & SMR' :
+                                    company.category === 'enrichment' ? 'Yakıt Döngüsü' : 'Utility & Enerji'}
+                                </span>
+                            </div>
+                            <h2 className="text-lg md:text-2xl font-bold text-white group-hover:text-indigo-300 transition-colors leading-tight">
+                                {company.name}
+                            </h2>
+                            <p className="text-xs md:text-sm text-gray-300 mt-1 font-medium">{company.tagline}</p>
+                        </div>
+
+                        <div className="flex items-center justify-between md:justify-end gap-4 mt-2 md:mt-0 md:w-1/3 border-t border-gray-700/50 md:border-0 pt-3 md:pt-0">
+                            <div className="text-left md:text-right flex-1 md:flex-initial">
+                                <div className="text-[10px] text-gray-500 mb-0.5">Odak Noktası</div>
+                                <div className="text-xs md:text-sm font-semibold text-indigo-200 line-clamp-1">{company.role}</div>
+                            </div>
+                            <button className={`p-1.5 md:p-2 rounded-full flex-shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 bg-indigo-600 text-white' : 'bg-gray-700 text-gray-400'}`}>
+                                <ChevronDown size={18} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className={`transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                        <div className="p-4 md:p-6 pt-0 border-t border-gray-700/50 bg-gray-900/30">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4 md:mt-6">
+                                <div className="space-y-2">
+                                    <div className="flex items-center space-x-2 text-indigo-400 mb-1">
+                                        <Factory size={16} />
+                                        <h3 className="font-bold text-xs md:text-sm uppercase">Ne Yapıyor?</h3>
+                                    </div>
+                                    <p className="text-xs md:text-sm text-gray-300 leading-relaxed">{company.details.what}</p>
+                                </div>
+
+                                <div className="space-y-2 relative">
+                                    <div className="hidden md:block absolute -left-3 top-0 bottom-0 w-px bg-gray-700/50"></div>
+                                    <div className="flex items-center space-x-2 text-emerald-400 mb-1">
+                                        <Cpu size={16} />
+                                        <h3 className="font-bold text-xs md:text-sm uppercase">Farkı Ne? (Moat)</h3>
+                                    </div>
+                                    <p className="text-xs md:text-sm text-gray-300 leading-relaxed">{company.details.moat}</p>
+                                </div>
+
+                                <div className="space-y-2 relative">
+                                    <div className="hidden md:block absolute -left-3 top-0 bottom-0 w-px bg-gray-700/50"></div>
+                                    <div className="flex items-center space-x-2 text-amber-400 mb-1">
+                                        <TrendingUp size={16} />
+                                        <h3 className="font-bold text-xs md:text-sm uppercase">Gelecek Beklentisi</h3>
+                                    </div>
+                                    <p className="text-xs md:text-sm text-gray-300 leading-relaxed">{company.details.catalyst}</p>
+                                </div>
+                            </div>
+
+                            {(company.id === 'NNE' || company.id === 'LEU') && (
+                                <div className="mt-4 p-3 rounded bg-blue-900/20 border border-blue-800/30 flex items-start gap-3">
+                                    {company.id === 'NNE' ? <Truck size={16} className="text-blue-400 mt-0.5 flex-shrink-0"/> : <FlaskConical size={16} className="text-blue-400 mt-0.5 flex-shrink-0"/>}
+                                    <span className="text-[10px] md:text-xs text-blue-200 font-medium">
+                                        {company.id === 'NNE' ? 'Özel Not: NNE, nükleer lojistiği (radyoaktif madde taşımacılığı) konusunda da lisans almaya odaklanmıştır.' : 
+                                        'Özel Not: HALEU yakıtı, standart nükleer yakıttan çok daha yoğun enerjiye sahiptir (%5-%20 zenginlik).'}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
