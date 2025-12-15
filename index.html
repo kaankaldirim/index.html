@@ -3,343 +3,460 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ABD Nükleer Borsası Analizi</title>
-    
-    <!-- Tailwind CSS (Stiller için) -->
+    <title>Tradebox 2026 Vizyon Simülatörü</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Import Map: React ve Lucide ikonlarını tarayıcıya tanıtıyoruz -->
-    <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@18.2.0",
-        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-        "lucide-react": "https://esm.sh/lucide-react@0.344.0"
-      }
-    }
-    </script>
-
-    <!-- Babel (JSX kodunu tarayıcının anlaması için) -->
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel (JSX Derleyicisi) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
+    
     <style>
-        /* Kaydırma çubuğunu gizleme */
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadeIn { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+        .animate-slideIn { animation: slideIn 0.4s ease-out forwards; }
     </style>
 </head>
-<body class="bg-black text-white">
+<body>
     <div id="root"></div>
 
-    <script type="text/babel" data-type="module">
-        import React, { useState } from 'react';
-        import { createRoot } from 'react-dom/client';
-        import { 
-            Atom, 
-            Pickaxe, 
-            Factory, 
-            Zap, 
-            TrendingUp, 
-            ChevronDown, 
-            Cpu, 
-            Truck, 
-            FlaskConical, 
-            DollarSign,
-            Code 
-        } from 'lucide-react';
+    <script type="text/babel">
+        const { useState } = React;
 
-        const App = () => {
-            const [activeCategory, setActiveCategory] = useState('all');
+        // --- ICON COMPONENTS (SVG) ---
+        const Icon = ({ path, size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {path}
+            </svg>
+        );
 
-            const categories = [
-                { id: 'all', name: 'Tüm Portföy', icon: TrendingUp },
-                { id: 'mining', name: 'Madencilik & İşleme', icon: Pickaxe },
-                { id: 'smr', name: 'Yeni Nesil SMR & Micro', icon: Atom },
-                { id: 'enrichment', name: 'Yakıt & Zenginleştirme', icon: Factory },
-                { id: 'utility', name: 'Santral & Yapay Zeka', icon: Zap },
-            ];
+        const Icons = {
+            Box: (props) => <Icon {...props} path={<><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></>} />,
+            Users: (props) => <Icon {...props} path={<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>} />,
+            DollarSign: (props) => <Icon {...props} path={<><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>} />,
+            Target: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></>} />,
+            TrendingUp: (props) => <Icon {...props} path={<><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></>} />,
+            Lock: (props) => <Icon {...props} path={<><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>} />,
+            Award: (props) => <Icon {...props} path={<><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></>} />,
+            ChevronRight: (props) => <Icon {...props} path={<polyline points="9 18 15 12 9 6"/>} />,
+            ChevronLeft: (props) => <Icon {...props} path={<polyline points="15 18 9 12 15 6"/>} />,
+            ArrowRight: (props) => <Icon {...props} path={<><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></>} />,
+            Smartphone: (props) => <Icon {...props} path={<><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></>} />,
+            CheckCircle: (props) => <Icon {...props} path={<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>} />,
+            BarChart2: (props) => <Icon {...props} path={<><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></>} />
+        };
 
-            const companies = [
-                {
-                    id: "CCJ",
-                    ticker: "CCJ",
-                    name: "Cameco Corporation",
-                    category: "mining",
-                    price: "~$50-55",
-                    tagline: "Devler Ligi: En Büyük Saf Oyuncu",
-                    role: "Tier-1 Uranyum Üretimi & Westinghouse Ortağı",
-                    details: {
-                        what: "Kanada merkezli olmasına rağmen NYSE'de işlem gören, batı dünyasının en büyük uranyum üreticisi. Sadece madenci değil; efsanevi reaktör üreticisi Westinghouse'un %49 ortağı olarak artık santral servisi işinde de var.",
-                        moat: "Dikey Entegrasyon & Rezerv Kalitesi: Cigar Lake madeni %15 tenörle çalışır (dünya ortalaması %0.2'dir). Maliyeti inanılmaz düşüktür. Westinghouse hamlesiyle artık sadece yakıt satmıyor, reaktörün bakımından ve kurulumundan da para kazanıyor.",
-                        catalyst: "Ukrayna savaşı sonrası batının Rus uranyumuna alternatif arayışında ilk kapısı."
-                    }
-                },
-                {
-                    id: "UUUU",
-                    ticker: "UUUU",
-                    name: "Energy Fuels",
-                    category: "mining",
-                    price: "~$6-7",
-                    tagline: "Stratejik Tesis Tekeli",
-                    role: "Uranyum + Vanadyum + Nadir Toprak Elementleri",
-                    details: {
-                        what: "Sadece bir madenci değil, ABD'deki tek lisanslı konvansiyonel uranyum işleme tesisi olan 'White Mesa Mill'in sahibidir. Ayrıca Nadir Toprak Elementleri (REE) işleme kapasitesine sahip tek ABD şirketlerinden biridir.",
-                        moat: "White Mesa Mill Tekeli: ABD'de başka bir şirket uranyum çıkarsa bile işlemek için büyük ihtimalle UUUU'nun kapısını çalmak zorundadır (veya yurtdışına yollamalıdır). Tesisin lisansını bugün sıfırdan almak 10+ yıl sürer.",
-                        catalyst: "Elektrikli araçlar için gereken nadir elementleri de işleyebilmeleri onları 'çift yönlü' bir enerji şirketi yapıyor."
-                    }
-                },
-                {
-                    id: "OKLO",
-                    ticker: "OKLO",
-                    name: "Oklo Inc.",
-                    category: "smr",
-                    price: "~$18-22",
-                    tagline: "Sam Altman'ın Nükleer Vizyonu",
-                    role: "Hızlı Fisyon Mikro Reaktörleri (Aurora)",
-                    details: {
-                        what: "OpenAI CEO'su Sam Altman'ın desteklediği şirket. 'Aurora' adını verdikleri reaktörler, nükleer atıkları yakıt olarak kullanabilen sıvı metal soğutmalı hızlı reaktörlerdir.",
-                        moat: "İş Modeli Farkı: Rakipleri reaktör satmaya çalışırken, Oklo 'Güç Satın Alma Anlaşması' (PPA) yapar. Yani reaktörü kurar, işletir ve elektriği müşteriye (özellikle Veri Merkezlerine) satar. Bu, tekrarlayan ve sürekli gelir (recurring revenue) demektir.",
-                        catalyst: "HALEU yakıtını geri dönüştürme teknolojisi, yakıt maliyetlerini sıfıra yaklaştırabilir."
-                    }
-                },
-                {
-                    id: "SMR",
-                    ticker: "SMR",
-                    name: "NuScale Power",
-                    category: "smr",
-                    price: "~$10-12",
-                    tagline: "Regülasyonu Yenen İlk Şirket",
-                    role: "Hafif Su SMR Teknolojisi",
-                    details: {
-                        what: "ABD Nükleer Düzenleme Komisyonu'ndan (NRC) tasarım onayı almayı başarmış ilk ve tek SMR şirketidir. VOYGR santralleri, mevcut büyük santrallerin küçültülmüş ve güvenli hale getirilmiş versiyonudur.",
-                        moat: "Zaman Avantajı: Nükleer sektörde en büyük engel teknolojiden ziyade bürokrasidir. NuScale bu bürokrasi duvarını aşmıştır. Rakipleri onay için yıllarca beklerken onlar sipariş aşamasındadır.",
-                        catalyst: "Romanya ve Doğu Avrupa projeleri ile küresel açılım potansiyeli."
-                    }
-                },
-                {
-                    id: "NNE",
-                    ticker: "NNE",
-                    name: "Nano Nuclear Energy",
-                    category: "smr",
-                    price: "~$15-20",
-                    tagline: "Taşınabilir Nükleer Güç",
-                    role: "Mikro Reaktörler & Taşıma Lojistiği",
-                    details: {
-                        what: "'ZEUS' ve 'ODIN' isimli mikro reaktörleri geliştiriyorlar. Bunlar bir tırın arkasına sığacak kadar küçük. Ayrıca HALEU yakıtının taşınması için özel lojistik şirketleri kurdular.",
-                        moat: "Niş Pazar (Askeri & Uzay): Şehir elektriğinden ziyade; askeri üsler, uzak maden sahaları veya afet bölgeleri için 'tak-çalıştır' enerji üretiyorlar. Rakiplerinden farkı, reaktörü 'taşınabilir' bir ürün olarak konumlandırmaları.",
-                        catalyst: "Idaho Ulusal Laboratuvarı ile yapılan stratejik ortaklıklar."
-                    }
-                },
-                {
-                    id: "LEU",
-                    ticker: "LEU",
-                    name: "Centrus Energy",
-                    category: "enrichment",
-                    price: "~$70-80",
-                    tagline: "SMR'ların Benzin İstasyonu",
-                    role: "HALEU Üretimi & Zenginleştirme",
-                    details: {
-                        what: "Uranyumu madenden alıp reaktörde yanacak kıvama getiren (zenginleştiren) kritik ara oyuncu. Yeni nesil reaktörlerin (Oklo, TerraPower vb.) ihtiyacı olan HALEU yakıtını ABD topraklarında üretebilen tek lisanslı ticari firma.",
-                        moat: "Milli Güvenlik Meselesi: ABD, Rusya'dan uranyum alımını kestiği an, LEU tek seçenek olarak kalıyor. SMR devrimi olacaksa, yakıtı LEU'dan geçmek zorunda.",
-                        catalyst: "ABD hükümetinden aldıkları hibe ve teşviklerle üretim kapasitelerini artırıyorlar."
-                    }
-                },
-                {
-                    id: "CEG",
-                    ticker: "CEG",
-                    name: "Constellation Energy",
-                    category: "utility",
-                    price: "~$260+",
-                    tagline: "Yapay Zeka'nın Enerji Kaynağı",
-                    role: "En Büyük İşletmeci & AI Partneri",
-                    details: {
-                        what: "ABD'nin en büyük nükleer filosuna sahip. Maden veya teknoloji riski almaz; var olan santralleri işletir. Yakın zamanda Microsoft ile Three Mile Island santralini sadece Microsoft için yeniden açmak üzere 20 yıllık dev bir anlaşma imzaladı.",
-                        moat: "Baz Yük Enerjisi: Rüzgar ve güneş kesintilidir, veri merkezleri ise 7/24 çalışır. CEG, veri merkezlerine 'kesintisiz yeşil enerji' satabilen nadir firmadır. Microsoft anlaşması, nükleer enerjinin piyasa fiyatının çok üzerinde satılabileceğini kanıtladı.",
-                        catalyst: "Diğer teknoloji devlerinin (Amazon, Google) benzer anlaşmalar için sırada beklemesi."
-                    }
-                }
-            ];
-
-            const filteredCompanies = activeCategory === 'all' 
-                ? companies 
-                : companies.filter(c => c.category === activeCategory);
+        // --- SUB COMPONENTS (Moved outside main component for stability) ---
+        
+        const StepCard = ({ color, step, title, text }) => {
+            // Renkleri manuel belirleyelim ki Tailwind CDN kaçırmasın
+            const borderColors = { blue: 'border-blue-500', green: 'border-green-500', purple: 'border-purple-500' };
+            const bgColors = { blue: 'bg-blue-500', green: 'bg-green-500', purple: 'bg-purple-500' };
+            const textColors = { blue: 'text-blue-500', green: 'text-green-500', purple: 'text-purple-500' };
 
             return (
-                <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white font-sans selection:bg-indigo-500 selection:text-white pb-10">
-                    
-                    {/* Hero Header */}
-                    <header className="pt-8 pb-6 px-4 border-b border-gray-800 bg-gray-900 z-20">
-                        <div className="max-w-5xl mx-auto">
-                            <div className="flex items-center space-x-3 mb-2">
-                                <div className="bg-indigo-600 p-2 rounded-lg shadow-lg shadow-indigo-500/20 flex-shrink-0">
-                                    <DollarSign className="w-6 h-6 text-white" />
-                                </div>
-                                <h1 className="text-2xl md:text-4xl font-extrabold bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent leading-tight">
-                                    ABD Nükleer Borsası
-                                </h1>
-                            </div>
-                            <p className="text-slate-400 max-w-2xl text-xs md:text-base leading-relaxed mt-2">
-                                NYSE ve Nasdaq'da işlem gören, sektörü domine eden kritik oyuncuların derin analizi. 
-                                <span className="text-indigo-400 font-medium ml-1 block md:inline mt-1 md:mt-0">Sadece ne yaptıkları değil, neden vazgeçilmez oldukları.</span>
-                            </p>
-                        </div>
-                    </header>
-
-                    {/* Main Container */}
-                    <main className="max-w-5xl mx-auto px-4 py-6">
-                        
-                        {/* Navigation Filters */}
-                        <div className="mb-6 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-                            <div className="flex space-x-2 md:flex-wrap md:space-x-0 md:gap-2 min-w-max">
-                                {categories.map((cat) => (
-                                    <button
-                                        key={cat.id}
-                                        onClick={() => setActiveCategory(cat.id)}
-                                        className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all duration-300 border flex-shrink-0
-                                            ${activeCategory === cat.id 
-                                                ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/40' 
-                                                : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-750 hover:border-gray-600 hover:text-gray-200'}`}
-                                    >
-                                        <cat.icon size={16} className="flex-shrink-0" />
-                                        <span className="whitespace-nowrap">{cat.name}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Cards Layout */}
-                        <div className="grid grid-cols-1 gap-5">
-                            {filteredCompanies.map((company) => (
-                                <AnalysisCard key={company.id} company={company} />
-                            ))}
-                        </div>
-
-                    </main>
-
-                    {/* Footer */}
-                    <footer className="border-t border-gray-800 mt-12 py-10 text-center px-4">
-                        <p className="text-gray-500 text-xs mb-6 max-w-md mx-auto">
-                            Burada yer alan veriler piyasa koşullarına göre değişkendir ve sadece eğitim amaçlıdır. Kesinlikle yatırım tavsiyesi değildir.
-                        </p>
-                        
-                        {/* Signature Box */}
-                        <div className="inline-flex flex-col items-center justify-center p-4 rounded-2xl bg-gray-800/50 border border-gray-700/50 backdrop-blur-sm hover:border-indigo-500/30 transition-colors">
-                            <div className="flex items-center space-x-2 mb-1">
-                                <Code size={16} className="text-indigo-400" />
-                                <span className="text-gray-400 text-xs font-medium tracking-wide">DEVELOPED BY</span>
-                            </div>
-                            <p className="text-lg font-bold bg-gradient-to-r from-indigo-300 to-white bg-clip-text text-transparent">
-                                Kaan Kaldırım
-                            </p>
-                        </div>
-                        <p className="mt-8 text-gray-700 text-[10px]">Reportt Steel © 2024</p>
-                    </footer>
+                <div className={`bg-white p-5 rounded-xl shadow-lg border-l-8 ${borderColors[color]} relative`}>
+                    <div className={`absolute -left-3 top-5 w-6 h-6 ${bgColors[color]} rounded-full flex items-center justify-center text-white text-xs font-bold`}>{step}</div>
+                    <div className={`text-xs font-bold ${textColors[color]} uppercase tracking-wider mb-1`}>{title}</div>
+                    <div className="text-gray-800 font-medium">{text}</div>
                 </div>
             );
         };
 
-        const AnalysisCard = ({ company }) => {
-            const [isOpen, setIsOpen] = useState(false);
+        const ArrowSeparator = () => (
+            <div className="flex justify-center"><Icons.ArrowRight className="text-gray-300 rotate-90 md:rotate-90" size={32} /></div>
+        );
 
-            const getAccentColor = () => {
-                switch(company.category) {
-                    case 'mining': return 'text-amber-400 border-amber-500/30 bg-amber-500/10';
-                    case 'smr': return 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10';
-                    case 'enrichment': return 'text-purple-400 border-purple-500/30 bg-purple-500/10';
-                    case 'utility': return 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10';
-                    default: return 'text-gray-400';
-                }
+        const ResultCard = ({ color, icon: IconComp, title, text }) => {
+            const gradients = { 
+                blue: 'from-blue-600 to-blue-500', 
+                green: 'from-green-600 to-green-500', 
+                purple: 'from-purple-600 to-purple-500' 
+            };
+            const textLight = {
+                blue: 'text-blue-100',
+                green: 'text-green-100',
+                purple: 'text-purple-200'
             };
 
             return (
-                <div className={`relative group rounded-xl border bg-gray-800/40 backdrop-blur-sm transition-all duration-300 overflow-hidden
-                    ${isOpen ? 'border-indigo-500/50 shadow-xl shadow-black/50' : 'border-gray-700 hover:border-gray-600 hover:bg-gray-800/60'}`}>
-                    
-                    <div 
-                        className="p-4 md:p-6 cursor-pointer flex flex-col md:flex-row gap-4 md:items-center justify-between"
-                        onClick={() => setIsOpen(!isOpen)}
-                    >
-                        <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-2">
-                                <span className={`text-[10px] md:text-sm font-black px-2 py-0.5 md:px-3 md:py-1 rounded md:rounded-md tracking-widest border ${getAccentColor()}`}>
-                                    {company.ticker}
-                                </span>
-                                <span className="text-gray-400 text-[10px] md:text-xs uppercase tracking-wide font-semibold truncate">
-                                    {company.category === 'mining' ? 'Madencilik' :
-                                    company.category === 'smr' ? 'Teknoloji & SMR' :
-                                    company.category === 'enrichment' ? 'Yakıt Döngüsü' : 'Utility & Enerji'}
-                                </span>
-                            </div>
-                            <h2 className="text-lg md:text-2xl font-bold text-white group-hover:text-indigo-300 transition-colors leading-tight">
-                                {company.name}
-                            </h2>
-                            <p className="text-xs md:text-sm text-gray-300 mt-1 font-medium">{company.tagline}</p>
-                        </div>
-
-                        <div className="flex items-center justify-between md:justify-end gap-4 mt-2 md:mt-0 md:w-1/3 border-t border-gray-700/50 md:border-0 pt-3 md:pt-0">
-                            <div className="text-left md:text-right flex-1 md:flex-initial">
-                                <div className="text-[10px] text-gray-500 mb-0.5">Odak Noktası</div>
-                                <div className="text-xs md:text-sm font-semibold text-indigo-200 line-clamp-1">{company.role}</div>
-                            </div>
-                            <button className={`p-1.5 md:p-2 rounded-full flex-shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 bg-indigo-600 text-white' : 'bg-gray-700 text-gray-400'}`}>
-                                <ChevronDown size={18} />
-                            </button>
+                <div className={`bg-gradient-to-r ${gradients[color]} p-5 rounded-xl shadow-xl text-white relative`}>
+                    <div className="flex items-center gap-3">
+                        <IconComp className="text-white/90" size={32} />
+                        <div>
+                            <div className={`text-xs font-bold ${textLight[color]} uppercase tracking-wider mb-1`}>{title}</div>
+                            <div className="font-bold text-lg">{text}</div>
                         </div>
                     </div>
+                </div>
+            );
+        };
 
-                    <div className={`transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                        <div className="p-4 md:p-6 pt-0 border-t border-gray-700/50 bg-gray-900/30">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4 md:mt-6">
-                                <div className="space-y-2">
-                                    <div className="flex items-center space-x-2 text-indigo-400 mb-1">
-                                        <Factory size={16} />
-                                        <h3 className="font-bold text-xs md:text-sm uppercase">Ne Yapıyor?</h3>
-                                    </div>
-                                    <p className="text-xs md:text-sm text-gray-300 leading-relaxed">{company.details.what}</p>
-                                </div>
+        // --- MAIN APPLICATION ---
+        const Presentation = () => {
+            const [currentSlide, setCurrentSlide] = useState(0);
+            const [activePath, setActivePath] = useState(null);
+            const [demoStep, setDemoStep] = useState(0);
 
-                                <div className="space-y-2 relative">
-                                    <div className="hidden md:block absolute -left-3 top-0 bottom-0 w-px bg-gray-700/50"></div>
-                                    <div className="flex items-center space-x-2 text-emerald-400 mb-1">
-                                        <Cpu size={16} />
-                                        <h3 className="font-bold text-xs md:text-sm uppercase">Farkı Ne? (Moat)</h3>
-                                    </div>
-                                    <p className="text-xs md:text-sm text-gray-300 leading-relaxed">{company.details.moat}</p>
-                                </div>
+            const slides = [
+                {
+                    id: 'intro',
+                    title: 'Tradebox: Oyunlaştırma & Sadakat',
+                    subtitle: 'ABD Borsalarında Acente Müşteri Etkileşim Projesi',
+                    author: 'Kaan Kaldırım',
+                    role: 'Yurt Dışı Piyasalar ve Türev Ürünler Satış Yönetmeni',
+                    type: 'cover'
+                },
+                {
+                    id: 'problem',
+                    title: 'Mevcut Durum & Fırsat',
+                    content: [
+                        { icon: Icons.Users, title: 'Hedef Kitle', text: 'Tradebox kullanan Acente Müşterileri' },
+                        { icon: Icons.DollarSign, title: 'Sorun', text: 'Düşük işlem sıklığı ve platform sadakati eksikliği.' },
+                        { icon: Icons.Target, title: 'Hedef (KPI)', text: 'İşlem adedini artırmak, AUM büyütmek ve aktifleşme.' }
+                    ],
+                    type: 'bullets'
+                },
+                {
+                    id: 'solution',
+                    title: 'Çözüm: "Tradebox Rewards"',
+                    subtitle: 'Yatırımı Bir Strateji Oyununa Dönüştürüyoruz',
+                    description: 'Müşteriye sadece "hisse al" demiyoruz; Tradebox üzerinde ona bir portföy yöneticisi kimliği ve görevler veriyoruz. Maliyetsiz ödüllerle (veri, analiz) sadakati artırıyoruz.',
+                    type: 'hero'
+                },
+                {
+                    id: 'diagram',
+                    title: 'Süreç Kurgusu (İnteraktif Akış)',
+                    subtitle: 'Müşteri Yolculuğunu Görmek İçin Senaryo Seçin',
+                    type: 'interactive-diagram'
+                },
+                {
+                    id: 'demo',
+                    title: 'Müşteri Deneyimi (Demo)',
+                    subtitle: 'Tradebox Mobil Arayüz Simülasyonu',
+                    type: 'mobile-demo'
+                },
+                {
+                    id: 'impact',
+                    title: 'Beklenen Etki & ROI',
+                    content: [
+                        { icon: Icons.TrendingUp, title: 'Hacim Artışı', text: 'Görev mekanizması ile atıl bakiyeler Tradebox üzerinde işleme döner.' },
+                        { icon: Icons.Lock, title: 'AUM Koruması', text: '"Bakiyeni Koru" görevleri ile para çıkışı engellenir.' },
+                        { icon: Icons.Award, title: 'Sıfır Maliyet', text: 'Ödüller tamamen iç kaynaklı dijital varlıklardır (Level 1 Veri, Bülten).' }
+                    ],
+                    type: 'bullets'
+                }
+            ];
 
-                                <div className="space-y-2 relative">
-                                    <div className="hidden md:block absolute -left-3 top-0 bottom-0 w-px bg-gray-700/50"></div>
-                                    <div className="flex items-center space-x-2 text-amber-400 mb-1">
-                                        <TrendingUp size={16} />
-                                        <h3 className="font-bold text-xs md:text-sm uppercase">Gelecek Beklentisi</h3>
-                                    </div>
-                                    <p className="text-xs md:text-sm text-gray-300 leading-relaxed">{company.details.catalyst}</p>
+            const nextSlide = () => { if (currentSlide < slides.length - 1) setCurrentSlide(c => c + 1); };
+            const prevSlide = () => { if (currentSlide > 0) setCurrentSlide(c => c - 1); };
+
+            // Render Functions
+            const renderCover = (slide) => (
+                <div className="flex flex-col items-center justify-center h-full text-center space-y-8 animate-fadeIn">
+                    <div className="bg-blue-600 p-8 rounded-3xl shadow-2xl shadow-blue-500/50 flex items-center justify-center">
+                        <Icons.Box size={80} className="text-white" />
+                    </div>
+                    <div>
+                        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">{slide.title}</h1>
+                        <h2 className="text-xl md:text-2xl text-blue-600 font-medium">{slide.subtitle}</h2>
+                    </div>
+                    <div className="mt-16 bg-white p-6 rounded-2xl border border-gray-100 shadow-lg">
+                        <p className="text-lg md:text-xl font-bold text-gray-800">{slide.author}</p>
+                        <p className="text-gray-500 mt-1">{slide.role}</p>
+                        <p className="text-sm text-gray-400 mt-4">22/12/2025</p>
+                    </div>
+                </div>
+            );
+
+            const renderBullets = (slide) => (
+                <div className="flex flex-col h-full justify-center px-4 md:px-12">
+                    <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-12 text-center">{slide.title}</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {slide.content.map((item, idx) => (
+                            <div key={idx} className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 flex flex-col items-center text-center hover:scale-105 transition-transform duration-300 group">
+                                <div className="bg-blue-50 p-4 rounded-full mb-6 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                    <item.icon size={40} />
                                 </div>
+                                <h3 className="text-xl font-bold text-gray-800 mb-3">{item.title}</h3>
+                                <p className="text-gray-600">{item.text}</p>
                             </div>
+                        ))}
+                    </div>
+                </div>
+            );
 
-                            {(company.id === 'NNE' || company.id === 'LEU') && (
-                                <div className="mt-4 p-3 rounded bg-blue-900/20 border border-blue-800/30 flex items-start gap-3">
-                                    {company.id === 'NNE' ? <Truck size={16} className="text-blue-400 mt-0.5 flex-shrink-0"/> : <FlaskConical size={16} className="text-blue-400 mt-0.5 flex-shrink-0"/>}
-                                    <span className="text-[10px] md:text-xs text-blue-200 font-medium">
-                                        {company.id === 'NNE' ? 'Özel Not: NNE, nükleer lojistiği (radyoaktif madde taşımacılığı) konusunda da lisans almaya odaklanmıştır.' : 
-                                        'Özel Not: HALEU yakıtı, standart nükleer yakıttan çok daha yoğun enerjiye sahiptir (%5-%20 zenginlik).'}
-                                    </span>
+            const renderHero = (slide) => (
+                <div className="flex flex-col h-full justify-center items-center px-12 text-center relative overflow-hidden">
+                     <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none flex justify-center items-center">
+                        <Icons.Box size={400} />
+                     </div>
+                    <h2 className="text-4xl md:text-5xl font-bold text-blue-900 mb-6 relative z-10">{slide.title}</h2>
+                    <h3 className="text-xl md:text-2xl text-blue-500 mb-10 relative z-10">{slide.subtitle}</h3>
+                    <div className="bg-white/80 backdrop-blur-sm p-8 rounded-3xl border border-gray-200 shadow-lg max-w-4xl relative z-10">
+                        <p className="text-lg md:text-xl text-gray-700 leading-relaxed">{slide.description}</p>
+                    </div>
+                </div>
+            );
+
+            const renderDiagram = () => (
+                <div className="flex flex-col h-full px-4 pt-8">
+                    <h2 className="text-3xl font-bold text-gray-800 mb-2 text-center">Süreç Ağacı</h2>
+                    <p className="text-center text-gray-500 mb-8">Müşteri segmentine tıklayarak Tradebox üzerindeki akışı izleyin.</p>
+                    
+                    <div className="flex flex-col md:flex-row flex-1 gap-6 overflow-hidden px-2 md:px-8 pb-8">
+                        {/* Sol Panel: Seçim */}
+                        <div className="w-full md:w-1/3 flex flex-col gap-4 justify-center">
+                            {[
+                                { id: 'new', title: 'Çaylak Yatırımcı', subtitle: 'Hiç işlem yapmamış', color: 'blue' },
+                                { id: 'active', title: 'Aktif Trader', subtitle: 'Sık işlem yapan', color: 'green' },
+                                { id: 'dormant', title: 'Uyuyan Hesap', subtitle: 'Bakiye var, işlem yok', color: 'purple' }
+                            ].map((btn) => (
+                                <button 
+                                    key={btn.id}
+                                    onClick={() => setActivePath(btn.id)}
+                                    className={`p-6 rounded-2xl border-2 text-left transition-all flex items-center justify-between shadow-sm hover:shadow-md 
+                                    ${activePath === btn.id 
+                                        ? (btn.color === 'blue' ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 
+                                           btn.color === 'green' ? 'border-green-500 bg-green-50 ring-2 ring-green-200' :
+                                           'border-purple-500 bg-purple-50 ring-2 ring-purple-200')
+                                        : `border-gray-200 hover:border-${btn.color}-300 bg-white`}`}
+                                >
+                                    <div>
+                                        <div className="font-bold text-gray-800 text-lg">{btn.title}</div>
+                                        <div className="text-sm text-gray-500">{btn.subtitle}</div>
+                                    </div>
+                                    <Icons.ChevronRight className={`${btn.color === 'blue' ? 'text-blue-500' : btn.color === 'green' ? 'text-green-500' : 'text-purple-500'} ${activePath === btn.id ? 'opacity-100 translate-x-1' : 'opacity-0'} transition-all`} />
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Sağ Panel: Akış Sonucu */}
+                        <div className="w-full md:w-2/3 flex items-center justify-center p-8 bg-gray-50 rounded-3xl border border-gray-100 relative shadow-inner">
+                            {!activePath && (
+                                <div className="text-center text-gray-400">
+                                    <div className="flex justify-center mb-4 opacity-20"><Icons.Box size={64} /></div>
+                                    <div className="font-medium text-xl">Bir senaryo seçiniz...</div>
+                                </div>
+                            )}
+                            
+                            {activePath === 'new' && (
+                                <div className="space-y-6 animate-slideIn w-full max-w-lg">
+                                    <StepCard color="blue" step="1" title="Tetikleyici" text='"Hoşgeldin! Favori hisseni izleme listene ekle."' />
+                                    <ArrowSeparator />
+                                    <StepCard color="blue" step="2" title="Aksiyon" text="Kullanıcı Tradebox'ta AAPL hissesini listeye ekler." />
+                                    <ArrowSeparator />
+                                    <ResultCard color="blue" icon={Icons.Award} title="Sonuç & Ödül" text="İlk işleminde Komisyon İadesi" />
+                                </div>
+                            )}
+
+                            {activePath === 'active' && (
+                                <div className="space-y-6 animate-slideIn w-full max-w-lg">
+                                    <StepCard color="green" step="1" title="Tetikleyici" text='"Portföyünü Çeşitlendir: 3 Farklı Sektörden Hisse Al"' />
+                                    <ArrowSeparator />
+                                    <StepCard color="green" step="2" title="Aksiyon" text="Teknoloji, Enerji ve Sağlık sektörüne yatırım yapar." />
+                                    <ArrowSeparator />
+                                    <ResultCard color="green" icon={Icons.BarChart2} title="Sonuç & Ödül" text="1 Ay Ücretsiz Level 1 Canlı Veri Paketi" />
+                                </div>
+                            )}
+
+                             {activePath === 'dormant' && (
+                                <div className="space-y-6 animate-slideIn w-full max-w-lg">
+                                    <StepCard color="purple" step="1" title="Tetikleyici" text='"Portföyünü 1000$ üstüne taşı, ayrıcalıkları kap."' />
+                                    <ArrowSeparator />
+                                    <StepCard color="purple" step="2" title="Aksiyon" text="Hesaba fon girişi yapar ve işlem yapmazsa bile tutar." />
+                                    <ArrowSeparator />
+                                    <ResultCard color="purple" icon={Icons.Lock} title="Sonuç & Ödül" text="Özel YKY Strateji Bültenine Erişim Hakkı" />
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
             );
+
+            const renderMobileDemo = () => (
+                <div className="flex flex-col md:flex-row h-full items-center justify-center gap-8 md:gap-16 px-8 overflow-y-auto">
+                    {/* Telefon Çerçevesi */}
+                    <div className="relative w-[320px] h-[640px] bg-gray-900 rounded-[3.5rem] border-[10px] border-gray-900 shadow-2xl overflow-hidden shrink-0 ring-4 ring-gray-200 my-4">
+                        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-7 bg-gray-900 rounded-b-xl z-20"></div>
+                        
+                        <div className="w-full h-full bg-slate-50 overflow-y-auto pt-10 pb-4 relative">
+                            {/* Header */}
+                            <div className="px-5 mb-6 flex justify-between items-center">
+                                <div>
+                                    <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
+                                        <Icons.Box size={18} className="text-blue-600" /> Tradebox
+                                    </h3>
+                                    <p className="text-xs text-gray-500">Portföyüm</p>
+                                </div>
+                                <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center border border-blue-100">
+                                    <Icons.Users size={16} className="text-blue-600" />
+                                </div>
+                            </div>
+
+                            {/* Gamification Banner */}
+                            <div className="mx-4 bg-gradient-to-br from-blue-700 to-indigo-800 rounded-2xl p-5 text-white shadow-lg mb-6 relative overflow-hidden group">
+                                <div className="relative z-10">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded-full">YENİ GÖREV</div>
+                                    </div>
+                                    <h4 className="font-bold text-xl mb-3 tracking-tight">Teknoloji Kaşifi</h4>
+                                    
+                                    <div className="w-full bg-blue-900/40 rounded-full h-2.5 mb-2 backdrop-blur-sm">
+                                        <div className="bg-gradient-to-r from-yellow-400 to-yellow-300 h-2.5 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(250,204,21,0.5)]" style={{width: demoStep === 0 ? '5%' : '100%'}}></div>
+                                    </div>
+                                    
+                                    <div className="flex justify-between text-xs font-medium text-blue-100">
+                                        <span>{demoStep === 0 ? '0/1 Tamamlandı' : '1/1 Tamamlandı!'}</span>
+                                        <span className="flex items-center gap-1 text-yellow-300"><Icons.Award size={12}/> Ödül: Canlı Veri</span>
+                                    </div>
+                                </div>
+                                <div className="absolute right-[-10px] bottom-[-20px] text-white opacity-10 transform group-hover:scale-110 transition-transform duration-500">
+                                    <Icons.Target size={100} />
+                                </div>
+                            </div>
+
+                            {/* Aksiyon Butonu */}
+                            <div className="px-4 mb-6">
+                                {demoStep === 0 ? (
+                                    <button 
+                                        onClick={() => setDemoStep(1)}
+                                        className="w-full py-4 bg-white border-2 border-dashed border-blue-300 rounded-xl flex items-center justify-center gap-2 text-blue-600 font-bold hover:bg-blue-50 hover:border-blue-400 transition-all shadow-sm active:scale-95"
+                                    >
+                                        <Icons.Target size={20} />
+                                        Görevi Başlat: AAPL Al
+                                    </button>
+                                ) : (
+                                    <div className="w-full py-4 bg-green-100 border border-green-200 rounded-xl flex items-center justify-center gap-2 text-green-700 font-bold animate-pulse shadow-sm">
+                                        <Icons.CheckCircle size={20} />
+                                        Görev Başarıyla Tamamlandı!
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Liste */}
+                            <div className="px-4 space-y-3">
+                                <h5 className="font-bold text-gray-700 text-sm">İzleme Listem</h5>
+                                {[
+                                    {s: 'AAPL', n: 'Apple Inc.', p: '230.12', ch: '+1.2%'},
+                                    {s: 'TSLA', n: 'Tesla Inc.', p: '245.30', ch: '-0.5%'},
+                                    {s: 'NVDA', n: 'Nvidia Corp.', p: '135.50', ch: '+2.1%'},
+                                ].map((stock, i) => (
+                                    <div key={i} className="flex justify-between items-center p-3 bg-white rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center font-bold text-gray-700 text-xs border border-gray-100">{stock.s}</div>
+                                            <div>
+                                                <div className="font-bold text-gray-800 text-sm">{stock.n}</div>
+                                                <div className="text-xs text-gray-400">NASDAQ</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="font-bold text-gray-800 text-sm">${stock.p}</div>
+                                            <div className={`text-xs font-medium ${stock.ch.includes('+') ? 'text-green-500' : 'text-red-500'}`}>{stock.ch}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Açıklama */}
+                    <div className="max-w-md">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                                <Icons.Smartphone size={24} />
+                            </div>
+                            <h3 className="text-3xl font-bold text-gray-800">Canlı Deneyim</h3>
+                        </div>
+                        <p className="text-gray-600 mb-8 text-lg leading-relaxed">
+                            Kullanıcı <strong>Tradebox</strong> "Portföyüm" sekmesine girdiğinde, statik bir liste yerine oyunlaştırılmış bir 
+                            <strong> "Görev Kartı"</strong> ile karşılaşır.
+                        </p>
+                        <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 mb-8">
+                            <h4 className="font-bold text-blue-800 mb-4 flex items-center gap-2"><Icons.Box size={18}/> Kurgu Nasıl İşliyor?</h4>
+                            <ol className="relative border-l border-blue-200 ml-2 space-y-4">
+                                <li className="pl-6 relative">
+                                    <span className="absolute -left-1.5 top-1.5 w-3 h-3 rounded-full bg-blue-400"></span>
+                                    <span className="text-blue-900 font-medium">Başlangıç:</span> <span className="text-blue-700 text-sm">Kullanıcı görevi görür ve kabul eder.</span>
+                                </li>
+                                <li className="pl-6 relative">
+                                    <span className="absolute -left-1.5 top-1.5 w-3 h-3 rounded-full bg-blue-400"></span>
+                                    <span className="text-blue-900 font-medium">İşlem:</span> <span className="text-blue-700 text-sm">Tradebox üzerinden ilgili hisseyi alır.</span>
+                                </li>
+                                <li className="pl-6 relative">
+                                    <span className="absolute -left-1.5 top-1.5 w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                                    <span className="text-blue-900 font-medium">Ödül:</span> <span className="text-blue-700 text-sm">Sistem anında Level 1 veriyi açar.</span>
+                                </li>
+                            </ol>
+                        </div>
+                        <button onClick={() => setDemoStep(0)} className="text-sm font-medium text-gray-400 underline hover:text-blue-600 transition-colors">Simülasyonu Sıfırla</button>
+                    </div>
+                </div>
+            );
+
+            // MAIN RENDER
+            return (
+                <div className="w-full min-h-screen flex items-center justify-center p-4 md:p-6 font-sans">
+                    <div className="w-full max-w-7xl h-[850px] bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col relative border border-white/50 ring-1 ring-black/5">
+                        
+                        {/* Üst Bar */}
+                        <div className="h-20 bg-white border-b border-gray-100 flex items-center justify-between px-6 md:px-10 shrink-0">
+                            <div className="font-bold text-xl md:text-2xl text-blue-900 tracking-tight flex items-center gap-2">
+                                <div className="bg-blue-600 text-white p-1.5 rounded-lg">
+                                    <Icons.Box size={20} />
+                                </div>
+                                TRADEBOX
+                            </div>
+                            <div className="hidden md:flex gap-3">
+                                {slides.map((_, idx) => (
+                                    <div key={idx} className={`h-2 rounded-full transition-all duration-500 ease-out ${idx === currentSlide ? 'w-12 bg-blue-600' : 'w-2 bg-gray-200'}`}></div>
+                                ))}
+                            </div>
+                            <div className="text-sm font-medium text-gray-400">2026 VİZYON PROJESİ</div>
+                        </div>
+
+                        {/* İçerik */}
+                        <div className="flex-1 overflow-hidden relative bg-slate-50">
+                            {slides[currentSlide].type === 'cover' && renderCover(slides[currentSlide])}
+                            {slides[currentSlide].type === 'bullets' && renderBullets(slides[currentSlide])}
+                            {slides[currentSlide].type === 'hero' && renderHero(slides[currentSlide])}
+                            {slides[currentSlide].type === 'interactive-diagram' && renderDiagram()}
+                            {slides[currentSlide].type === 'mobile-demo' && renderMobileDemo()}
+                        </div>
+
+                        {/* Alt Navigasyon */}
+                        <div className="h-24 bg-white border-t border-gray-100 flex items-center justify-between px-6 md:px-10 shrink-0">
+                            <button 
+                                onClick={prevSlide}
+                                disabled={currentSlide === 0}
+                                className={`flex items-center gap-2 px-6 py-4 rounded-xl font-bold transition-all ${currentSlide === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100 hover:scale-105 active:scale-95'}`}
+                            >
+                                <Icons.ChevronLeft size={24} /> <span className="hidden md:inline">Geri</span>
+                            </button>
+
+                            <div className="text-gray-300 font-mono font-bold tracking-widest">
+                                {currentSlide + 1} / {slides.length}
+                            </div>
+
+                            <button 
+                                onClick={nextSlide}
+                                disabled={currentSlide === slides.length - 1}
+                                className={`flex items-center gap-2 px-6 py-4 rounded-xl font-bold transition-all ${currentSlide === slides.length - 1 ? 'text-gray-300 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200 hover:scale-105 active:scale-95'}`}
+                            >
+                                <span className="hidden md:inline">İleri</span> <Icons.ChevronRight size={24} />
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            );
         };
 
-        const root = createRoot(document.getElementById('root'));
-        root.render(<App />);
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<Presentation />);
     </script>
 </body>
 </html>
-
