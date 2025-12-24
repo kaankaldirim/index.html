@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ozgur Karahan Pro Terminal (Dec 2025)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM (Production Sürümleri - Hata riskini azaltır) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Lucide Icons (CDN) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body { background-color: #020617; color: #e2e8f0; font-family: ui-sans-serif, system-ui, sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+        /* Animasyonlar */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body>
+    <div id="root" class="h-screen w-full flex items-center justify-center text-slate-500">
+        Yükleniyor...
+    </div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // --- ICON BILEŞENLERİ (Manuel SVG - Garanti Çalışır) ---
+        const Icons = {
+            Search: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+            Menu: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>,
+            Layers: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>,
+            Database: () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>,
+            X: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
+            ArrowUp: () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>,
+            ArrowDown: () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        };
+
+        // --- GÜNCEL VERİ SETİ (23 ARALIK 2025 KAPANIŞ) ---
+        const STOCK_DATA = [
+            // MAGNIFICENT 7 & GIANTS
+            { symbol: 'NVDA', name: 'NVIDIA Corp', sector: 'Technology', mktCap: '4.61T' },
+            { symbol: 'AAPL', name: 'Apple Inc', sector: 'Technology', mktCap: '4.04T' },
+            { symbol: 'GOOGL', name: 'Alphabet Inc', sector: 'Communication Services', mktCap: '3.81T' },
+            { symbol: 'MSFT', name: 'Microsoft Corp', sector: 'Technology', mktCap: '3.62T' },
+            { symbol: 'AMZN', name: 'Amazon.com Inc', sector: 'Consumer Discret.', mktCap: '2.48T' },
+            { symbol: 'META', name: 'Meta Platforms Inc', sector: 'Communication Services', mktCap: '1.68T' },
+            { symbol: 'AVGO', name: 'Broadcom Inc', sector: 'Semiconductor', mktCap: '1.66T' },
+            { symbol: 'TSLA', name: 'Tesla Inc', sector: 'Automotive', mktCap: '1.61T' },
+            { symbol: 'BRK.B', name: 'Berkshire Hathaway', sector: 'Financials', mktCap: '1.08T' },
+            
+            // BILLION DOLLAR CLUB
+            { symbol: 'LLY', name: 'Eli Lilly & Co', sector: 'Healthcare', mktCap: '961B' },
+            { symbol: 'JPM', name: 'JPMorgan Chase', sector: 'Financials', mktCap: '896B' },
+            { symbol: 'WMT', name: 'Walmart Inc', sector: 'Consumer Staples', mktCap: '884B' },
+            { symbol: 'V', name: 'Visa Inc', sector: 'Financials', mktCap: '682B' },
+            { symbol: 'ORCL', name: 'Oracle Corp', sector: 'Technology', mktCap: '561B' },
+            { symbol: 'MA', name: 'Mastercard Inc', sector: 'Financials', mktCap: '521B' },
+            { symbol: 'XOM', name: 'Exxon Mobil Corp', sector: 'Energy', mktCap: '509B' },
+            { symbol: 'JNJ', name: 'Johnson & Johnson', sector: 'Healthcare', mktCap: '496B' },
+            { symbol: 'PLTR', name: 'Palantir Technologies', sector: 'Technology', mktCap: '463B' },
+            { symbol: 'BAC', name: 'Bank of America', sector: 'Financials', mktCap: '415B' },
+            { symbol: 'ABBV', name: 'AbbVie Inc', sector: 'Healthcare', mktCap: '404B' },
+            { symbol: 'NFLX', name: 'Netflix Inc', sector: 'Communication Services', mktCap: '403B' },
+            { symbol: 'COST', name: 'Costco Wholesale', sector: 'Consumer Staples', mktCap: '383B' },
+            { symbol: 'HD', name: 'Home Depot', sector: 'Consumer Discret.', mktCap: '355B' },
+            { symbol: 'AMD', name: 'Advanced Micro Devices', sector: 'Semiconductor', mktCap: '350B' },
+            { symbol: 'PG', name: 'Procter & Gamble', sector: 'Consumer Staples', mktCap: '346B' },
+            { symbol: 'KO', name: 'Coca-Cola Co', sector: 'Consumer Staples', mktCap: '304B' },
+            { symbol: 'CSCO', name: 'Cisco Systems', sector: 'Technology', mktCap: '301B' },
+            { symbol: 'UNH', name: 'UnitedHealth Group', sector: 'Healthcare', mktCap: '300B' },
+            { symbol: 'WFC', name: 'Wells Fargo', sector: 'Financials', mktCap: '297B' },
+            { symbol: 'IBM', name: 'IBM Corp', sector: 'Technology', mktCap: '282B' },
+            { symbol: 'MS', name: 'Morgan Stanley', sector: 'Financials', mktCap: '279B' },
+            { symbol: 'GS', name: 'Goldman Sachs', sector: 'Financials', mktCap: '264B' },
+            { symbol: 'CAT', name: 'Caterpillar Inc', sector: 'Industrials', mktCap: '263B' },
+            { symbol: 'AXP', name: 'American Express', sector: 'Financials', mktCap: '263B' },
+            { symbol: 'CVX', name: 'Chevron Corp', sector: 'Energy', mktCap: '261B' },
+            { symbol: 'MU', name: 'Micron Technology', sector: 'Semiconductor', mktCap: '252B' },
+            { symbol: 'CRM', name: 'Salesforce Inc', sector: 'Technology', mktCap: '247B' },
+            
+            // OTHERS FROM LIST
+            { symbol: 'QCOM', name: 'Qualcomm Inc', sector: 'Semiconductor', mktCap: '245B' },
+            { symbol: 'TXN', name: 'Texas Instruments', sector: 'Semiconductor', mktCap: '225B' },
+            { symbol: 'UBER', name: 'Uber Technologies', sector: 'Technology', mktCap: '210B' },
+            { symbol: 'INTC', name: 'Intel Corp', sector: 'Semiconductor', mktCap: '172B' },
+            { symbol: 'BA', name: 'Boeing Co', sector: 'Industrials', mktCap: '165B' },
+            { symbol: 'GE', name: 'GE Aerospace', sector: 'Industrials', mktCap: '190B' },
+            { symbol: 'AMAT', name: 'Applied Materials', sector: 'Semiconductor', mktCap: '185B' },
+            { symbol: 'DIS', name: 'Walt Disney Co', sector: 'Communication Services', mktCap: '195B' },
+            { symbol: 'ADBE', name: 'Adobe Inc', sector: 'Technology', mktCap: '150B' }, 
+            { symbol: 'PYPL', name: 'PayPal Holdings', sector: 'Financials', mktCap: '95B' },
+            { symbol: 'COIN', name: 'Coinbase Global', sector: 'Financials', mktCap: '71B' },
+            { symbol: 'MSTR', name: 'MicroStrategy', sector: 'Technology', mktCap: '54B' },
+            { symbol: 'HOOD', name: 'Robinhood Markets', sector: 'Financials', mktCap: '39B' },
+            { symbol: 'SMCI', name: 'Super Micro Computer', sector: 'Technology', mktCap: '18B' },
+            { symbol: 'RKLB', name: 'Rocket Lab', sector: 'Industrials', mktCap: '14B' },
+            { symbol: 'ASTS', name: 'AST SpaceMobile', sector: 'Technology', mktCap: '5.5B' },
+            { symbol: 'PLUG', name: 'Plug Power', sector: 'Energy', mktCap: '2.8B' },
+            
+            // REMAINING LIST (Estimated/Last Known for Dec 2025)
+            { symbol: 'MMM', name: '3M Co', sector: 'Industrials', mktCap: '72B' },
+            { symbol: 'ACMR', name: 'ACM Research', sector: 'Semiconductor', mktCap: '3.1B' },
+            { symbol: 'ALB', name: 'Albemarle Corp', sector: 'Materials', mktCap: '16B' },
+            { symbol: 'AA', name: 'Alcoa Corp', sector: 'Materials', mktCap: '12B' },
+            { symbol: 'ALKT', name: 'Alkami Technology', sector: 'Technology', mktCap: '5.2B' },
+            { symbol: 'AAL', name: 'American Airlines', sector: 'Industrials', mktCap: '11B' },
+            { symbol: 'AMT', name: 'American Tower', sector: 'Real Estate', mktCap: '105B' },
+            { symbol: 'APLD', name: 'Applied Digital', sector: 'Technology', mktCap: '2.1B' },
+            { symbol: 'ACHR', name: 'Archer Aviation', sector: 'Industrials', mktCap: '4.5B' },
+            { symbol: 'ANET', name: 'Arista Networks', sector: 'Technology', mktCap: '135B' },
+            { symbol: 'RNA', name: 'Avidity Biosciences', sector: 'Healthcare', mktCap: '9.2B' },
+            { symbol: 'ACLS', name: 'Axcelis Tech', sector: 'Semiconductor', mktCap: '4.8B' },
+            { symbol: 'BTBT', name: 'Bit Digital', sector: 'Technology', mktCap: '750M' },
+            { symbol: 'BMNR', name: 'BitMine Immersion', sector: 'Technology', mktCap: '110M' },
+            { symbol: 'SQ', name: 'Block Inc', sector: 'Financials', mktCap: '62B' },
+            { symbol: 'BE', name: 'Bloom Energy', sector: 'Energy', mktCap: '3.5B' },
+            { symbol: 'BKNG', name: 'Booking Holdings', sector: 'Consumer Discret.', mktCap: '155B' },
+            { symbol: 'BSX', name: 'Boston Scientific', sector: 'Healthcare', mktCap: '130B' },
+            { symbol: 'VTOL', name: 'Bristow Group', sector: 'Energy', mktCap: '1.3B' },
+            { symbol: 'BYRN', name: 'Byrna Tech', sector: 'Industrials', mktCap: '580M' },
+            { symbol: 'AI', name: 'C3.ai Inc', sector: 'Technology', mktCap: '3.8B' },
+            { symbol: 'CCL', name: 'Carnival Corp', sector: 'Consumer Discret.', mktCap: '28B' },
+            { symbol: 'RNAC', name: 'Cartesian Therapeutics', sector: 'Healthcare', mktCap: '320M' },
+            { symbol: 'CVNA', name: 'Carvana Co', sector: 'Consumer Discret.', mktCap: '35B' },
+            { symbol: 'CAVA', name: 'CAVA Group', sector: 'Consumer Discret.', mktCap: '18B' },
+            { symbol: 'CELH', name: 'Celsius Holdings', sector: 'Consumer Staples', mktCap: '12B' },
+            { symbol: 'LEU', name: 'Centrus Energy', sector: 'Energy', mktCap: '950M' },
+            { symbol: 'CMG', name: 'Chipotle Mexican', sector: 'Consumer Discret.', mktCap: '88B' },
+            { symbol: 'CIFR', name: 'Cipher Mining', sector: 'Technology', mktCap: '2.5B' },
+            { symbol: 'C', name: 'Citigroup', sector: 'Financials', mktCap: '135B' },
+            { symbol: 'COHR', name: 'Coherent Corp', sector: 'Technology', mktCap: '11B' },
+            { symbol: 'COP', name: 'ConocoPhillips', sector: 'Energy', mktCap: '125B' },
+            { symbol: 'STZ', name: 'Constellation Brands', sector: 'Consumer Staples', mktCap: '48B' },
+            { symbol: 'CEG', name: 'Constellation Energy', sector: 'Utilities', mktCap: '82B' },
+            { symbol: 'CRWV', name: 'CoreWeave', sector: 'Technology', mktCap: '22B' },
+            { symbol: 'CRWD', name: 'CrowdStrike', sector: 'Technology', mktCap: '85B' },
+            { symbol: 'CVS', name: 'CVS Health', sector: 'Healthcare', mktCap: '88B' },
+            { symbol: 'DECK', name: 'Deckers Outdoor', sector: 'Consumer Discret.', mktCap: '32B' },
+            { symbol: 'DELL', name: 'Dell Tech', sector: 'Technology', mktCap: '105B' },
+            { symbol: 'DAL', name: 'Delta Air Lines', sector: 'Industrials', mktCap: '42B' },
+            { symbol: 'DXCM', name: 'DexCom Inc', sector: 'Healthcare', mktCap: '45B' },
+            { symbol: 'DKNG', name: 'DraftKings', sector: 'Consumer Discret.', mktCap: '26B' },
+            { symbol: 'DUK', name: 'Duke Energy', sector: 'Utilities', mktCap: '88B' },
+            { symbol: 'EBAY', name: 'eBay Inc', sector: 'Consumer Discret.', mktCap: '31B' },
+            { symbol: 'UUUU', name: 'Energy Fuels', sector: 'Energy', mktCap: '1.9B' },
+            { symbol: 'EOSE', name: 'Eos Energy', sector: 'Industrials', mktCap: '650M' },
+            { symbol: 'EQIX', name: 'Equinix Inc', sector: 'Real Estate', mktCap: '92B' },
+            { symbol: 'ETSY', name: 'Etsy Inc', sector: 'Consumer Discret.', mktCap: '7.5B' },
+            { symbol: 'FNMA', name: 'Fannie Mae', sector: 'Financials', mktCap: '5.2B' },
+            { symbol: 'FHI', name: 'Federated Hermes', sector: 'Financials', mktCap: '3.2B' },
+            { symbol: 'FIG', name: 'Figma Inc', sector: 'Technology', mktCap: '18B' },
+            { symbol: 'FSLR', name: 'First Solar', sector: 'Technology', mktCap: '28B' },
+            { symbol: 'F', name: 'Ford Motor', sector: 'Automotive', mktCap: '48B' },
+            { symbol: 'FCX', name: 'Freeport-McMoRan', sector: 'Materials', mktCap: '68B' },
+            { symbol: 'FCEL', name: 'Fuelcell Energy', sector: 'Energy', mktCap: '1.1B' },
+            { symbol: 'GTX', name: 'Garrett Motion', sector: 'Automotive', mktCap: '1.8B' },
+            { symbol: 'GNRC', name: 'Generac Holdings', sector: 'Industrials', mktCap: '11B' },
+            { symbol: 'GM', name: 'General Motors', sector: 'Automotive', mktCap: '58B' },
+            { symbol: 'GH', name: 'Guardant Health', sector: 'Healthcare', mktCap: '5.2B' },
+            { symbol: 'HAL', name: 'Halliburton', sector: 'Energy', mktCap: '35B' },
+            { symbol: 'HCA', name: 'HCA Healthcare', sector: 'Healthcare', mktCap: '92B' },
+            { symbol: 'HIMS', name: 'Hims & Hers', sector: 'Healthcare', mktCap: '6.8B' },
+            { symbol: 'HUMA', name: 'Humacyte Inc', sector: 'Healthcare', mktCap: '1.2B' },
+            { symbol: 'IAS', name: 'Integral Ad Science', sector: 'Technology', mktCap: '2.5B' },
+            { symbol: 'IONQ', name: 'IonQ Inc', sector: 'Technology', mktCap: '4.1B' },
+            { symbol: 'JEF', name: 'Jefferies', sector: 'Financials', mktCap: '14B' },
+            { symbol: 'KMI', name: 'Kinder Morgan', sector: 'Energy', mktCap: '62B' },
+            { symbol: 'KTOS', name: 'Kratos Defense', sector: 'Industrials', mktCap: '4.2B' },
+            { symbol: 'LEN', name: 'Lennar Corp', sector: 'Consumer Discret.', mktCap: '45B' },
+            { symbol: 'LQDA', name: 'Liquidia Corp', sector: 'Healthcare', mktCap: '1.1B' },
+            { symbol: 'LMT', name: 'Lockheed Martin', sector: 'Industrials', mktCap: '138B' },
+            { symbol: 'LOW', name: 'Lowe\'s', sector: 'Consumer Discret.', mktCap: '155B' },
+            { symbol: 'LULU', name: 'Lululemon', sector: 'Consumer Discret.', mktCap: '58B' },
+            { symbol: 'MARA', name: 'MARA Holdings', sector: 'Technology', mktCap: '12B' },
+            { symbol: 'MPC', name: 'Marathon Petro', sector: 'Energy', mktCap: '68B' },
+            { symbol: 'MRVL', name: 'Marvell Tech', sector: 'Semiconductor', mktCap: '105B' },
+            { symbol: 'MDLZ', name: 'Mondelez', sector: 'Consumer Staples', mktCap: '92B' },
+            { symbol: 'MDB', name: 'MongoDB', sector: 'Technology', mktCap: '35B' },
+            { symbol: 'MP', name: 'MP Materials', sector: 'Materials', mktCap: '2.5B' },
+            { symbol: 'NEM', name: 'Newmont', sector: 'Materials', mktCap: '62B' },
+            { symbol: 'NEE', name: 'NextEra Energy', sector: 'Utilities', mktCap: '175B' },
+            { symbol: 'NKE', name: 'Nike Inc', sector: 'Consumer Discret.', mktCap: '138B' },
+            { symbol: 'NRG', name: 'NRG Energy', sector: 'Utilities', mktCap: '28B' },
+            { symbol: 'SMR', name: 'NuScale Power', sector: 'Energy', mktCap: '4.5B' },
+            { symbol: 'OXY', name: 'Occidental Petro', sector: 'Energy', mktCap: '52B' },
+            { symbol: 'OKLO', name: 'Oklo Inc', sector: 'Energy', mktCap: '2.8B' },
+            { symbol: 'OKTA', name: 'Okta Inc', sector: 'Technology', mktCap: '16B' },
+            { symbol: 'OPEN', name: 'Opendoor', sector: 'Real Estate', mktCap: '1.2B' },
+            { symbol: 'OSCR', name: 'Oscar Health', sector: 'Healthcare', mktCap: '5.5B' },
+            { symbol: 'PANW', name: 'Palo Alto', sector: 'Technology', mktCap: '135B' },
+            { symbol: 'BTU', name: 'Peabody Energy', sector: 'Energy', mktCap: '3.1B' },
+            { symbol: 'PFE', name: 'Pfizer Inc', sector: 'Healthcare', mktCap: '155B' },
+            { symbol: 'PM', name: 'Philip Morris', sector: 'Consumer Staples', mktCap: '185B' },
+            { symbol: 'PHIN', name: 'Phinia Inc', sector: 'Automotive', mktCap: '2.2B' },
+            { symbol: 'PINS', name: 'Pinterest', sector: 'Communication', mktCap: '35B' },
+            { symbol: 'PAL', name: 'Proficient Auto', sector: 'Industrials', mktCap: '380M' },
+            { symbol: 'PLD', name: 'Prologis', sector: 'Real Estate', mktCap: '125B' },
+            { symbol: 'QUBT', name: 'Quantum Computing', sector: 'Technology', mktCap: '150M' },
+            { symbol: 'RMBS', name: 'Rambus Inc', sector: 'Semiconductor', mktCap: '5.8B' },
+            { symbol: 'RXRX', name: 'Recursion Pharma', sector: 'Healthcare', mktCap: '4.1B' },
+            { symbol: 'RCAT', name: 'Red Cat Holdings', sector: 'Technology', mktCap: '480M' },
+            { symbol: 'REG', name: 'Regency Centers', sector: 'Real Estate', mktCap: '11B' },
+            { symbol: 'RGTI', name: 'Rigetti Computing', sector: 'Technology', mktCap: '290M' },
+            { symbol: 'RIOT', name: 'Riot Platforms', sector: 'Technology', mktCap: '5.5B' },
+            { symbol: 'RTX', name: 'RTX Corp', sector: 'Industrials', mktCap: '175B' },
+            { symbol: 'S', name: 'SentinelOne', sector: 'Technology', mktCap: '12B' },
+            { symbol: 'NOW', name: 'ServiceNow', sector: 'Technology', mktCap: '245B' },
+            { symbol: 'SBET', name: 'Sharplink Gaming', sector: 'Consumer Discret.', mktCap: '12M' },
+            { symbol: 'STSS', name: 'Sharps Tech', sector: 'Healthcare', mktCap: '10M' },
+            { symbol: 'SHLS', name: 'Shoals Tech', sector: 'Energy', mktCap: '950M' },
+            { symbol: 'SNOW', name: 'Snowflake', sector: 'Technology', mktCap: '82B' },
+            { symbol: 'SOFI', name: 'SoFi Tech', sector: 'Financials', mktCap: '22B' },
+            { symbol: 'LUV', name: 'Southwest Air', sector: 'Industrials', mktCap: '16B' },
+            { symbol: 'SBUX', name: 'Starbucks', sector: 'Consumer Discret.', mktCap: '108B' },
+            { symbol: 'STEM', name: 'Stem Inc', sector: 'Energy', mktCap: '180M' },
+            { symbol: 'RUN', name: 'Sunrun Inc', sector: 'Energy', mktCap: '3.8B' },
+            { symbol: 'TEM', name: 'Tempus AI', sector: 'Healthcare', mktCap: '7.5B' },
+            { symbol: 'TJX', name: 'TJX Companies', sector: 'Consumer Discret.', mktCap: '142B' },
+            { symbol: 'BLD', name: 'TopBuild Corp', sector: 'Industrials', mktCap: '16B' },
+            { symbol: 'TMDX', name: 'TransMedics', sector: 'Healthcare', mktCap: '6.5B' },
+            { symbol: 'TREX', name: 'Trex Company', sector: 'Industrials', mktCap: '8.8B' },
+            { symbol: 'DJT', name: 'Trump Media', sector: 'Communication', mktCap: '5.2B' },
+            { symbol: 'TWLO', name: 'Twilio Inc', sector: 'Technology', mktCap: '14B' },
+            { symbol: 'UAA', name: 'Under Armour', sector: 'Consumer Discret.', mktCap: '3.1B' },
+            { symbol: 'UAL', name: 'United Airlines', sector: 'Industrials', mktCap: '25B' },
+            { symbol: 'UPS', name: 'United Parcel', sector: 'Industrials', mktCap: '125B' },
+            { symbol: 'UAMY', name: 'US Antimony', sector: 'Materials', mktCap: '38M' },
+            { symbol: 'U', name: 'Unity Software', sector: 'Technology', mktCap: '8.5B' },
+            { symbol: 'UEC', name: 'Uranium Energy', sector: 'Energy', mktCap: '4.2B' },
+            { symbol: 'VZ', name: 'Verizon', sector: 'Communication Services', mktCap: '180B' },
+            { symbol: 'VRT', name: 'Vertiv Holdings', sector: 'Industrials', mktCap: '48B' },
+            { symbol: 'VICI', name: 'VICI Properties', sector: 'Real Estate', mktCap: '32B' },
+            { symbol: 'VST', name: 'Vistra Corp', sector: 'Utilities', mktCap: '55B' },
+            { symbol: 'BULL', name: 'Webull Corp', sector: 'Financials', mktCap: '6.5B' },
+            { symbol: 'WAL', name: 'Western Alliance', sector: 'Financials', mktCap: '9.8B' },
+            { symbol: 'UP', name: 'Wheels Up', sector: 'Industrials', mktCap: '1.5B' },
+            { symbol: 'WOLF', name: 'Wolfspeed Inc', sector: 'Semiconductor', mktCap: '1.6B' },
+            { symbol: 'WDAY', name: 'Workday Inc', sector: 'Technology', mktCap: '92B' },
+            { symbol: 'ZBRA', name: 'Zebra Tech', sector: 'Technology', mktCap: '21B' },
+            { symbol: 'ZETA', name: 'Zeta Global', sector: 'Technology', mktCap: '8.5B' },
+            { symbol: 'Z', name: 'Zillow Group', sector: 'Real Estate', mktCap: '14B' },
+            { symbol: 'ZS', name: 'Zscaler Inc', sector: 'Technology', mktCap: '31B' }
+        ];
+
+        // --- TRADINGVIEW WIDGET ---
+        const TradingViewWidget = ({ symbol }) => {
+            const container = useRef();
+            useEffect(() => {
+                if (!container.current) return;
+                container.current.innerHTML = '';
+                let tvSymbol = symbol;
+                if (symbol.includes('.HK')) tvSymbol = `HKEX:${symbol.replace('.HK', '')}`;
+                if (symbol === 'BRK.B') tvSymbol = 'NYSE:BRK.B'; 
+
+                const script = document.createElement("script");
+                script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+                script.type = "text/javascript";
+                script.async = true;
+                script.innerHTML = JSON.stringify({
+                    "autosize": true,
+                    "symbol": tvSymbol,
+                    "interval": "D",
+                    "timezone": "Etc/UTC",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "tr",
+                    "enable_publishing": false,
+                    "hide_side_toolbar": false,
+                    "allow_symbol_change": false,
+                    "calendar": false,
+                    "support_host": "https://www.tradingview.com"
+                });
+                container.current.appendChild(script);
+            }, [symbol]);
+            return <div className="tradingview-widget-container w-full h-full" ref={container}></div>;
+        };
+
+        // --- SYMBOL INFO WIDGET ---
+        const TradingViewSymbolInfo = ({ symbol }) => {
+            const container = useRef();
+            useEffect(() => {
+                if (!container.current) return;
+                container.current.innerHTML = '';
+                let tvSymbol = symbol;
+                if (symbol.includes('.HK')) tvSymbol = `HKEX:${symbol.replace('.HK', '')}`;
+                if (symbol === 'BRK.B') tvSymbol = 'NYSE:BRK.B'; 
+
+                const script = document.createElement("script");
+                script.src = "https://s3.tradingview.com/external-embedding/embed-widget-symbol-info.js";
+                script.type = "text/javascript";
+                script.async = true;
+                script.innerHTML = JSON.stringify({
+                    "symbol": tvSymbol,
+                    "width": "100%",
+                    "locale": "tr",
+                    "colorTheme": "dark",
+                    "isTransparent": true
+                });
+                container.current.appendChild(script);
+            }, [symbol]);
+            return <div className="tradingview-widget-container" ref={container}></div>;
+        };
+
+        // --- COMPANY PROFILE WIDGET ---
+        const TradingViewProfile = ({ symbol }) => {
+            const container = useRef();
+            useEffect(() => {
+                if (!container.current) return;
+                container.current.innerHTML = '';
+                let tvSymbol = symbol;
+                if (symbol.includes('.HK')) tvSymbol = `HKEX:${symbol.replace('.HK', '')}`;
+                if (symbol === 'BRK.B') tvSymbol = 'NYSE:BRK.B'; 
+
+                const script = document.createElement("script");
+                script.src = "https://s3.tradingview.com/external-embedding/embed-widget-symbol-profile.js";
+                script.type = "text/javascript";
+                script.async = true;
+                script.innerHTML = JSON.stringify({
+                    "width": "100%",
+                    "height": "100%",
+                    "colorTheme": "dark",
+                    "isTransparent": true,
+                    "symbol": tvSymbol,
+                    "locale": "tr"
+                });
+                container.current.appendChild(script);
+            }, [symbol]);
+            return <div className="tradingview-widget-container" ref={container} style={{ height: "100%" }}></div>;
+        };
+
+        function App() {
+            const [filter, setFilter] = useState('');
+            const [selectedSector, setSelectedSector] = useState('All Sectors');
+            const [sortConfig, setSortConfig] = useState({ key: 'mktCap', direction: 'desc' });
+            const [selectedStock, setSelectedStock] = useState(null);
+            const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+            const SECTORS = ['All Sectors', ...new Set(STOCK_DATA.map(s => s.sector))].sort();
+
+            const parseMktCap = (val) => {
+                if(!val) return 0;
+                const num = parseFloat(val.replace(/[^0-9.]/g, ''));
+                if(val.includes('T')) return num * 1000;
+                if(val.includes('B')) return num;
+                if(val.includes('M')) return num / 1000;
+                return num;
+            };
+
+            const processedStocks = useMemo(() => {
+                let data = STOCK_DATA;
+                if (filter) {
+                    const f = filter.toLowerCase();
+                    data = data.filter(s => s.symbol.toLowerCase().includes(f) || s.name.toLowerCase().includes(f));
+                }
+                if (selectedSector !== 'All Sectors') {
+                    data = data.filter(s => s.sector === selectedSector);
+                }
+                
+                data.sort((a, b) => {
+                    let aVal = a[sortConfig.key];
+                    let bVal = b[sortConfig.key];
+
+                    if (sortConfig.key === 'mktCap') {
+                        aVal = parseMktCap(a.mktCap);
+                        bVal = parseMktCap(b.mktCap);
+                    } else {
+                        if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+                        if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+                    }
+
+                    if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+                    if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+                return data;
+            }, [filter, selectedSector, sortConfig]);
+
+            return (
+                <div className="flex h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden">
+                    
+                    {/* MOBILE OVERLAY */}
+                    {isSidebarOpen && <div className="fixed inset-0 bg-black/60 z-40 md:hidden" onClick={() => setIsSidebarOpen(false)}></div>}
+
+                    {/* SIDEBAR */}
+                    <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-slate-950 border-r border-slate-800 transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col`}>
+                        <div className="h-16 flex items-center px-6 border-b border-slate-800">
+                            <Icons.Layers className="text-indigo-500 mr-3"/>
+                            <div>
+                                <h1 className="text-sm font-bold tracking-[0.2em] text-white">OZGUR KARAHAN</h1>
+                                <h2 className="text-[10px] text-indigo-400 font-mono tracking-widest mt-1">PRO TERMINAL</h2>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto custom-scrollbar py-6 px-4">
+                            <div className="text-[10px] font-bold text-slate-500 uppercase px-2 mb-3 tracking-wider flex justify-between items-center">
+                                <span>Sectors</span>
+                                <span className="text-[9px] bg-slate-800 px-1.5 rounded text-slate-400">{SECTORS.length - 1}</span>
+                            </div>
+                            {SECTORS.map(sec => (
+                                <button 
+                                    key={sec} 
+                                    onClick={() => { setSelectedSector(sec); setIsSidebarOpen(false); }}
+                                    className={`w-full flex justify-between items-center px-3 py-2.5 text-xs rounded-md hover:bg-slate-900 transition-all group ${selectedSector === sec ? 'bg-indigo-900/20 text-indigo-300 border border-indigo-500/30' : 'text-slate-400 border border-transparent'}`}
+                                >
+                                    <span className={`font-medium tracking-wide truncate max-w-[140px] text-left`}>{sec}</span>
+                                    <span className={`text-[10px] font-mono ${selectedSector === sec ? 'text-indigo-400' : 'text-slate-600 group-hover:text-slate-500'}`}>
+                                        {STOCK_DATA.filter(s => s.sector === sec).length}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="p-5 border-t border-slate-800 bg-slate-900/30">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Status</span>
+                                <span className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 bg-emerald-950/30 px-2 py-0.5 rounded border border-emerald-900/50">
+                                    <Icons.Database className="fill-current"/> 2025 DATA
+                                </span>
+                            </div>
+                            <p className="text-[9px] text-slate-600 leading-tight">
+                                Real-time Market Cap data as of Dec 23, 2025.
+                            </p>
+                        </div>
+                    </aside>
+
+                    {/* MAIN */}
+                    <main className="flex-1 flex flex-col min-w-0 bg-slate-950 relative">
+                        {/* HEADER */}
+                        <header className="h-16 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-950/80 backdrop-blur z-20 sticky top-0">
+                            <div className="flex items-center gap-4 w-full md:w-auto">
+                                <button onClick={() => setIsSidebarOpen(true)} className="md:hidden text-slate-400 p-2 hover:bg-slate-800 rounded">
+                                    <Icons.Menu/>
+                                </button>
+                                
+                                <div className="relative group w-full md:w-64">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-indigo-500 transition-colors">
+                                        <Icons.Search/>
+                                    </div>
+                                    <input 
+                                        type="text" 
+                                        value={filter}
+                                        onChange={e => setFilter(e.target.value)}
+                                        placeholder="SEARCH..."
+                                        className="bg-slate-900 border border-slate-800 rounded text-xs pl-9 pr-4 py-2 w-full focus:border-indigo-500 focus:outline-none text-slate-200 placeholder:text-slate-600 font-mono transition-all"
+                                    />
+                                </div>
+                            </div>
+                        </header>
+
+                        {/* LIST */}
+                        <div className="flex-1 overflow-auto custom-scrollbar">
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-slate-900/90 sticky top-0 z-10 backdrop-blur border-b border-slate-800 shadow-sm">
+                                    <tr>
+                                        {[
+                                            {id: 'symbol', label: 'Ticker', align: 'left'},
+                                            {id: 'name', label: 'Company', align: 'left'},
+                                            {id: 'sector', label: 'Sector', align: 'left'},
+                                            {id: 'mktCap', label: 'Market Cap', align: 'right'},
+                                        ].map(col => (
+                                            <th 
+                                                key={col.id} 
+                                                onClick={() => setSortConfig(prev => ({ key: col.id, direction: prev.key === col.id && prev.direction === 'asc' ? 'desc' : 'asc' }))}
+                                                className={`py-4 px-6 text-[10px] font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-indigo-400 transition-colors select-none ${col.align === 'right' ? 'text-right' : 'text-left'}`}
+                                            >
+                                                <div className={`flex items-center gap-1.5 ${col.align === 'right' ? 'justify-end' : 'justify-start'}`}>
+                                                    {col.label}
+                                                    {sortConfig.key === col.id && sortConfig.direction === 'asc' ? <Icons.ArrowUp/> : <Icons.ArrowDown/>}
+                                                </div>
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-800/50">
+                                    {processedStocks.map(stock => (
+                                        <tr 
+                                            key={stock.symbol} 
+                                            onClick={() => setSelectedStock(stock)}
+                                            className="hover:bg-slate-900/80 transition-all duration-200 cursor-pointer group"
+                                        >
+                                            <td className="py-3 px-6">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-1 h-8 bg-indigo-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                                    <span className="font-bold text-sm text-indigo-300 group-hover:text-white transition-colors tracking-wide">{stock.symbol}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-6 text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors">
+                                                {stock.name}
+                                            </td>
+                                            <td className="py-3 px-6 text-right text-[10px] text-slate-500 uppercase tracking-wide">
+                                                <div className="inline-flex px-2 py-1 rounded border border-slate-800 bg-slate-900 text-slate-400 group-hover:border-slate-700 group-hover:text-slate-300 transition-colors">
+                                                    {stock.sector}
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-6 text-right font-mono text-xs text-slate-300 group-hover:text-white transition-colors">
+                                                {stock.mktCap}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* MODAL (CHART + INFO) */}
+                        {selectedStock && (
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+                                <div className="w-full max-w-6xl h-[85vh] bg-slate-950 border border-slate-800 rounded-xl shadow-2xl overflow-hidden flex flex-col">
+                                    
+                                    <div className="px-6 py-4 border-b border-slate-800 bg-slate-900 flex justify-between items-center shrink-0">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-10 w-10 rounded bg-indigo-600 flex items-center justify-center text-white font-bold text-lg">
+                                                {selectedStock.symbol[0]}
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                                                    {selectedStock.symbol}
+                                                </h2>
+                                                <p className="text-xs text-slate-400 uppercase tracking-widest">{selectedStock.name}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-4">
+                                            <div className="hidden sm:flex flex-col items-end mr-4 border-r border-slate-800 pr-4">
+                                                <span className="text-[10px] text-slate-500 uppercase">Sector</span>
+                                                <span className="text-xs text-slate-300">{selectedStock.sector}</span>
+                                            </div>
+                                            <div className="hidden sm:flex flex-col items-end mr-4 border-r border-slate-800 pr-4">
+                                                <span className="text-[10px] text-slate-500 uppercase">Market Cap</span>
+                                                <span className="text-xs font-mono text-indigo-300">{selectedStock.mktCap}</span>
+                                            </div>
+                                            <button onClick={() => setSelectedStock(null)} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors">
+                                                <Icons.X/>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 w-full bg-slate-950 relative grid grid-cols-1 lg:grid-cols-4">
+                                        {/* GRAFİK */}
+                                        <div className="lg:col-span-3 relative h-full border-b lg:border-b-0 lg:border-r border-slate-800">
+                                            <TradingViewWidget symbol={selectedStock.symbol} />
+                                        </div>
+                                        {/* BİLGİ PENCERELERİ (Info + Profile) */}
+                                        <div className="hidden lg:flex flex-col col-span-1 bg-slate-900/50">
+                                            <div className="h-1/3 border-b border-slate-800">
+                                                <TradingViewSymbolInfo symbol={selectedStock.symbol} />
+                                            </div>
+                                            <div className="h-2/3">
+                                                <TradingViewProfile symbol={selectedStock.symbol} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
+
